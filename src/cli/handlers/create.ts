@@ -48,6 +48,9 @@ export async function createHandler(args: string[]): Promise<void> {
         type: "string",
         multiple: true,
       },
+      base: {
+        type: "string",
+      },
     },
     strict: true,
     allowPositionals: true,
@@ -64,6 +67,7 @@ export async function createHandler(args: string[]): Promise<void> {
   const openShell = values.shell ?? false;
   const execCommand = values.exec;
   const copyFileOptions = values["copy-file"];
+  const baseOption = values.base;
 
   // Determine tmux option
   const tmuxOption =
@@ -131,6 +135,7 @@ export async function createHandler(args: string[]): Promise<void> {
 
     const result = await createWorktreeCore(gitRoot, worktreeName, {
       copyFiles: filesToCopy.length > 0 ? filesToCopy : undefined,
+      base: baseOption,
     });
 
     if (isErr(result)) {

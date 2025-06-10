@@ -14,7 +14,7 @@ import {
 
 export interface CreateWorktreeOptions {
   branch?: string;
-  commitish?: string;
+  base?: string;
   copyFiles?: string[];
 }
 
@@ -38,7 +38,7 @@ export async function createWorktree(
     return nameValidation;
   }
 
-  const { branch = name, commitish = "HEAD" } = options;
+  const { branch = name, base = "HEAD" } = options;
 
   const worktreesPath = getPhantomDirectory(gitRoot);
   const worktreePath = getWorktreePath(gitRoot, name);
@@ -58,7 +58,7 @@ export async function createWorktree(
     await addWorktree({
       path: worktreePath,
       branch,
-      commitish,
+      base,
     });
 
     let copiedFiles: string[] | undefined;
