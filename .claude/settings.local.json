@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm ready:*)",
+      "Bash(git add:*)",
+      "Bash(./dist/phantom.js --help)",
+      "Bash(./dist/phantom.js create test-phantom)",
+      "Bash(./dist/phantom.js list)",
+      "Bash(./dist/phantom.js delete test-phantom)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr edit:*)",
+      "Bash(pnpm test:*)",
+      "Bash(grep:*)"
+    ],
+    "deny": []
+  }
+}

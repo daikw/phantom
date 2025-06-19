@@ -8,6 +8,9 @@ export interface PhantomConfig {
     copyFiles?: string[];
     commands?: string[];
   };
+  preDelete?: {
+    commands?: string[];
+  };
   worktreesDirectory?: string;
 }
 

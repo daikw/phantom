@@ -89,6 +89,68 @@ describe("validateConfig", () => {
     }
   });
 
+  test("should accept valid config with preDelete commands", () => {
+    const config = {
+      preDelete: {
+        commands: ["docker compose down", "rm -rf temp"],
+      },
+    };
+
+    const result = validateConfig(config);
+
+    assert.strictEqual(isOk(result), true);
+    if (isOk(result)) {
+      assert.deepStrictEqual(result.value, config);
+    }
+  });
+
+  test("should accept config with both postCreate and preDelete", () => {
+    const config = {
+      postCreate: {
+        copyFiles: [".env"],
+        commands: ["pnpm install"],
+      },
+      preDelete: {
+        commands: ["docker stop my-container"],
+      },
+    };
+
+    const result = validateConfig(config);
+
+    assert.strictEqual(isOk(result), true);
+    if (isOk(result)) {
+      assert.deepStrictEqual(result.value, config);
+    }
+  });
+
+  test("should accept config with empty preDelete", () => {
+    const config = {
+      preDelete: {},
+    };
+
+    const result = validateConfig(config);
+
+    assert.strictEqual(isOk(result), true);
+    if (isOk(result)) {
+      assert.deepStrictEqual(result.value, config);
+    }
+  });
+
+  test("should accept config with empty preDelete commands array", () => {
+    const config = {
+      preDelete: {
+        commands: [],
+      },
+    };
+
+    const result = validateConfig(config);
+
+    assert.strictEqual(isOk(result), true);
+    if (isOk(result)) {
+      assert.deepStrictEqual(result.value, config);
+    }
+  });
+
   test("should accept config with worktreesDirectory", () => {
     const config = {
       worktreesDirectory: "../phantom-worktrees",
@@ -476,6 +538,142 @@ describe("validateConfig", () => {
       }
     });
 
+    test("should reject when preDelete is string", () => {
+      const result = validateConfig({ preDelete: "invalid" });
+
+      assert.strictEqual(isErr(result), true);
+      if (isErr(result)) {
+        assert.ok(result.error instanceof ConfigValidationError);
+        assert.strictEqual(
+          result.error.message,
+          "Invalid phantom.config.json: preDelete: Expected object, received string",
+        );
+      }
+    });
+
+    test("should reject when preDelete is number", () => {
+      const result = validateConfig({ preDelete: 123 });
+
+      assert.strictEqual(isErr(result), true);
+      if (isErr(result)) {
+        assert.ok(result.error instanceof ConfigValidationError);
+        assert.strictEqual(
+          result.error.message,
+          "Invalid phantom.config.json: preDelete: Expected object, received number",
+        );
+      }
+    });
+
+    test("should reject when preDelete is array", () => {
+      const result = validateConfig({ preDelete: [] });
+
+      assert.strictEqual(isErr(result), true);
+      if (isErr(result)) {
+        assert.ok(result.error instanceof ConfigValidationError);
+        assert.strictEqual(
+          result.error.message,
+          "Invalid phantom.config.json: preDelete: Expected object, received array",
+        );
+      }
+    });
+
+    test("should reject when preDelete is null", () => {
+      const result = validateConfig({ preDelete: null });
+
+      assert.strictEqual(isErr(result), true);
+      if (isErr(result)) {
+        assert.ok(result.error instanceof ConfigValidationError);
+        assert.strictEqual(
+          result.error.message,
+          "Invalid phantom.config.json: preDelete: Expected object, received null",
+        );
+      }
+    });
+
+    test("should reject when preDelete commands is string", () => {
+      const result = validateConfig({ preDelete: { commands: "invalid" } });
+
+      assert.strictEqual(isErr(result), true);
+      if (isErr(result)) {
+        assert.ok(result.error instanceof ConfigValidationError);
+        assert.strictEqual(
+          result.error.message,
+          "Invalid phantom.config.json: preDelete.commands: Expected array, received string",
+        );
+      }
+    });
+
+    test("should reject when preDelete commands is number", () => {
+      const result = validateConfig({ preDelete: { commands: 123 } });
+
+      assert.strictEqual(isErr(result), true);
+      if (isErr(result)) {
+        assert.ok(result.error instanceof ConfigValidationError);
+        assert.strictEqual(
+          result.error.message,
+          "Invalid phantom.config.json: preDelete.commands: Expected array, received number",
+        );
+      }
+    });
+
+    test("should reject when preDelete commands is object", () => {
+      const result = validateConfig({ preDelete: { commands: {} } });
+
+      assert.strictEqual(isErr(result), true);
+      if (isErr(result)) {
+        assert.ok(result.error instanceof ConfigValidationError);
+        assert.strictEqual(
+          result.error.message,
+          "Invalid phantom.config.json: preDelete.commands: Expected array, received object",
+        );
+      }
+    });
+
+    test("should reject when preDelete commands contains non-string values", () => {
+      const result = validateConfig({
+        preDelete: { commands: ["docker compose down", 123] },
+      });
+
+      assert.strictEqual(isErr(result), true);
+      if (isErr(result)) {
+        assert.ok(result.error instanceof ConfigValidationError);
+        assert.strictEqual(
+          result.error.message,
+          "Invalid phantom.config.json: preDelete.commands.1: Expected string, received number",
+        );
+      }
+    });
+
+    test("should reject when preDelete commands contains null", () => {
+      const result = validateConfig({
+        preDelete: { commands: ["docker compose down", null] },
+      });
+
+      assert.strictEqual(isErr(result), true);
+      if (isErr(result)) {
+        assert.ok(result.error instanceof ConfigValidationError);
+        assert.strictEqual(
+          result.error.message,
+          "Invalid phantom.config.json: preDelete.commands.1: Expected string, received null",
+        );
+      }
+    });
+
+    test("should reject when preDelete commands contains objects", () => {
+      const result = validateConfig({
+        preDelete: { commands: ["docker compose down", {}] },
+      });
+
+      assert.strictEqual(isErr(result), true);
+      if (isErr(result)) {
+        assert.ok(result.error instanceof ConfigValidationError);
+        assert.strictEqual(
+          result.error.message,
+          "Invalid phantom.config.json: preDelete.commands.1: Expected string, received object",
+        );
+      }
+    });
+
     test("should reject when worktreesDirectory is number", () => {
       const result = validateConfig({ worktreesDirectory: 123 });
 
@@ -563,6 +761,22 @@ describe("validateConfig", () => {
       const config = {
         postCreate: {
           copyFiles: [".env", "config/local.json"],
+          unknownProperty: "should be ignored",
+        },
+      };
+
+      const result = validateConfig(config);
+
+      assert.strictEqual(isOk(result), true);
+      if (isOk(result)) {
+        assert.deepStrictEqual(result.value, config);
+      }
+    });
+
+    test("should accept preDelete with unknown properties", () => {
+      const config = {
+        preDelete: {
+          commands: ["docker compose down"],
           unknownProperty: "should be ignored",
         },
       };

@@ -18,6 +18,12 @@ const phantomConfigSchema = z
       })
       .passthrough()
       .optional(),
+    preDelete: z
+      .object({
+        commands: z.array(z.string()).optional(),
+      })
+      .passthrough()
+      .optional(),
     worktreesDirectory: z.string().optional(),
   })
   .passthrough();

@@ -3,6 +3,8 @@ import {
   executeGitCommandInDirectory,
 } from "@aku11i/phantom-git";
 import { type Result, err, isErr, isOk, ok } from "@aku11i/phantom-shared";
+import { loadConfig } from "../config/loader.ts";
+import { execInWorktree } from "../exec.ts";
 import { WorktreeError, type WorktreeNotFoundError } from "./errors.ts";
 import { validateWorktreeExists } from "./validate.ts";
 
@@ -19,6 +21,61 @@ export interface DeleteWorktreeSuccess {
 export interface WorktreeStatus {
   hasUncommittedChanges: boolean;
   changedFiles: number;
+}
+
+export interface PreDeleteExecutionOptions {
+  gitRoot: string;
+  worktreesDirectory: string;
+  worktreeName: string;
+  commands: string[];
+}
+
+export interface PreDeleteExecutionResult {
+  executedCommands: string[];
+}
+
+export async function executePreDeleteCommands(
+  options: PreDeleteExecutionOptions,
+): Promise<Result<PreDeleteExecutionResult>> {
+  const { gitRoot, worktreesDirectory, worktreeName, commands } = options;
+
+  const executedCommands: string[] = [];
+
+  for (const command of commands) {
+    console.log(`Executing pre-delete command: ${command}`);
+    const shell = process.env.SHELL || "/bin/sh";
+    const cmdResult = await execInWorktree(
+      gitRoot,
+      worktreesDirectory,
+      worktreeName,
+      [shell, "-c", command],
+    );
+
+    if (isErr(cmdResult)) {
+      const errorMessage =
+        cmdResult.error instanceof Error
+          ? cmdResult.error.message
+          : String(cmdResult.error);
+      return err(
+        new Error(
+          `Failed to execute pre-delete command "${command}": ${errorMessage}`,
+        ),
+      );
+    }
+
+    // Check exit code
+    if (cmdResult.value.exitCode !== 0) {
+      return err(
+        new Error(
+          `Pre-delete command failed with exit code ${cmdResult.value.exitCode}: ${command}`,
+        ),
+      );
+    }
+
+    executedCommands.push(command);
+  }
+
+  return ok({ executedCommands });
 }
 
 export async function getWorktreeChangesStatus(
@@ -107,6 +164,26 @@ export async function deleteWorktree(
         `Worktree '${name}' has uncommitted changes (${status.changedFiles} files). Use --force to delete anyway.`,
       ),
     );
+  }
+
+  // Load configuration and execute pre-delete commands
+  try {
+    const configResult = await loadConfig(gitRoot);
+    if (isOk(configResult) && configResult.value.preDelete?.commands) {
+      const preDeleteResult = await executePreDeleteCommands({
+        gitRoot,
+        worktreesDirectory: worktreeDirectory,
+        worktreeName: name,
+        commands: configResult.value.preDelete.commands,
+      });
+
+      if (isErr(preDeleteResult)) {
+        return err(new WorktreeError(preDeleteResult.error.message));
+      }
+    }
+  } catch (error) {
+    // If config loading fails, continue without pre-delete commands
+    // This ensures backwards compatibility
   }
 
   try {
