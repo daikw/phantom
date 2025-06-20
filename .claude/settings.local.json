@@ -10,7 +10,14 @@
       "Bash(gh pr view:*)",
       "Bash(gh pr edit:*)",
       "Bash(pnpm test:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(pnpm build)",
+      "Bash(./packages/cli/dist/phantom.js --help)",
+      "Bash(./packages/cli/dist/phantom.js list:*)",
+      "Bash(./packages/cli/dist/phantom.js create:*)",
+      "Bash(./packages/cli/dist/phantom.js delete:*)"
     ],
     "deny": []
   }
